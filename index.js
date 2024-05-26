@@ -25,25 +25,38 @@ let render = () => {
 	context.lineJoin = "round";
 	context.lineCap = "round";
 
+	// Draw board
 	let bh = h * BOARD_HEIGHT;
 	let bw = bh / BOARD_ROWS * BOARD_COLUMNS;
 	let bx = w / 2 - bw / 2;
 	let by = context.lineWidth / 2;
+	let bc = bh / BOARD_ROWS;
 
 	context.fillStyle = "#111";
 	context.fillRect(bx, by, bw, bh);
 
 	context.strokeStyle = "#EEE";
-	for (let i = 0; i <= BOARD_COLUMNS; i++) {
-		context.moveTo(bx + bw * i / BOARD_COLUMNS, by);
-		context.lineTo(bx + bw * i / BOARD_COLUMNS, by + bh);
+	for (let i = 0; i <= BOARD_COLUMNS; i++) for (let j = 0; j < BOARD_ROWS; j++)
+		context.strokeRect(bx + bw * i / BOARD_COLUMNS, by + bh * j / BOARD_ROWS, bc, bc);
+
+	// Draw controls
+	let cx = context.lineWidth / 2;
+	let cy = by + bh + context.lineWidth / 2;
+	let cw = w - context.lineWidth;
+	let ch = h - cy - context.lineWidth;
+
+	context.fillStyle = "#DDD";
+	context.fillRect(cx, cy, cw, ch);
+
+	for (let i = 0; i <= 5; i++) {
+		context.moveTo(cw * i / 5, cy);
+		context.lineTo(cw * i / 5, cy + ch);
 		context.stroke();
 	}
-	for (let i = 0; i <= BOARD_ROWS; i++) {
-		context.moveTo(bx,      by + bh * i / BOARD_ROWS);
-		context.lineTo(bx + bw, by + bh * i / BOARD_ROWS);
-		context.stroke();
-	}
+
+	context.moveTo(cw * 2 / 5, cy + ch / 2);
+	context.lineTo(cw * 3 / 5, cy + ch / 2);
+	context.stroke();
 
 	context.font = "bold 50px sans serif";
 	context.textBaseline = "top";
