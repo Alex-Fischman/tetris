@@ -1,3 +1,4 @@
+/// Constants
 const LOAD_TIME = 500;
 const BOARD_HEIGHT = 0.7;
 const BOARD_COLUMNS = 10;
@@ -14,11 +15,16 @@ const BACKGROUND_COLOR = "#EEE";
 const BUTTON_COLOR = "#DDD";
 const PIECE_COLORS = ["#1EE", "#11E", "#EA1", "#EE1", "#1E1", "#E1E", "#E11"];
 
+// Correct for negative numbers
+let mod = (n, m) => ((n % m) + m) % m;
+
+/// Drawing
 let context = document.getElementById("canvas").getContext("2d");
 let stroke =         style  => { context.strokeStyle = style; context.stroke();          };
 let fill   =         style  => { context.fillStyle   = style; context.fill();            };
 let text = (s, x, y, style) => { context.fillStyle   = style; context.fillText(s, x, y); };
 
+/// Rect struct
 let rect = (x, y, w, h) => ({ x, y, w, h });
 let fx = (rect, f) => rect.x + rect.w * f;
 let fy = (rect, f) => rect.y + rect.h * f;
@@ -33,8 +39,7 @@ let fillRect   = (rect, style) => {
 	context.fillRect(rect.x, rect.y, rect.w, rect.h);
 };
 
-let mod = (n, m) => ((n % m) + m) % m;
-
+/// Piece shapes
 let pieces = [
 	[[3, 0], [4, 0], [5, 0], [6, 0]],
 	[[3, 0], [3, -1], [4, 0], [5, 0]],
@@ -46,6 +51,7 @@ let pieces = [
 ];
 let centers = [[4.5, 0.5], [4, 0], [4, 0], [4.5, -0.5], [4, 0], [4, 0], [4, 0]];
 
+/// Game state
 let active_piece = {
 	x: 0,
 	y: 4,
@@ -53,6 +59,16 @@ let active_piece = {
 	i: 0,
 };
 
+let static_board = [];
+for (let i = 0; i < BOARD_ROWS; i++) {
+	let row = [];
+	for (let j = 0; j < BOARD_COLUMNS; j++) row.push(BOARD_COLOR);
+	static_board.push(row);
+}
+
+let load = performance.now();
+
+/// Utility functions
 let get_active_cells = () => pieces[active_piece.i].map(([x, y]) => {
 	let c = centers[active_piece.i];
 	let theta = Math.PI / 2 * active_piece.r;
@@ -72,13 +88,7 @@ let is_active_colliding = () => {
 	return false;
 };
 
-let static_board = [];
-for (let i = 0; i < BOARD_ROWS; i++) {
-	let row = [];
-	for (let j = 0; j < BOARD_COLUMNS; j++) row.push(BOARD_COLOR);
-	static_board.push(row);
-}
-
+/// Controls
 let move_left = () => {
 	active_piece.x -= 1;
 	if (is_active_colliding()) active_piece.x += 1;
@@ -101,6 +111,7 @@ let turn_right = () => {
 };
 let pause_game = () => { console.log("pause_game"); };
 
+/// Input handlers
 let button_rects = [undefined, undefined, undefined,  undefined, undefined,  undefined ];
 let button_keys  = ["KeyA",    "KeyJ",    "Escape",   "Space",   "KeyL",     "KeyD"    ];
 let button_funcs = [move_left, turn_left, pause_game, fast_drop, turn_right, move_right];
@@ -112,8 +123,10 @@ document.addEventListener("keydown", e => button_keys.map((k, i) => {
 	if (e.code == k) button_funcs[i]();
 }));
 
+/// Update
 let update = dt => {};
 
+/// Render
 let render = () => {
 	let {width: w, height: h} = context.canvas.getBoundingClientRect();
 	context.canvas.width = w;
@@ -127,7 +140,7 @@ let render = () => {
 	context.font = "bold 50px sans serif";
 	context.textBaseline = "top";
 
-	// Draw board
+	// Board
 	let board;
 	{
 		let bx = context.lineWidth / 2;
@@ -153,7 +166,7 @@ let render = () => {
 
 	for (let [x, y] of get_active_cells()) drawCell(x, y, PIECE_COLORS[active_piece.i]);
 
-	// Draw controls
+	// Buttons
 	let controls = rect(
 		context.lineWidth / 2,
 		fy(board, 1),
@@ -259,25 +272,27 @@ let render = () => {
 		}
 	}
 
-	// Draw side panel
-	text("Score: " + localStorage.getItem("Score"), fx(board, 1) + 10, board.y + 10, BOARD_COLOR);
-};
+	// Side panel
+	text("Level: " + localStorage.getItem("Level"), fx(board, 1) + 10, board.y + 10, BOARD_COLOR);
+	text("Score: " + localStorage.getItem("Score"), fx(board, 1) + 10, board.y + 60, BOARD_COLOR);
 
-let then = performance.now();
-let load = performance.now();
-
-let frame = now => {
-	let dt = now - then;
-	then = now;
-	update(dt);
-
-	render();
-
+	/// Load screen
+	let now = performance.now();
 	if (now - load < LOAD_TIME) {
 		let {width: w, height: h} = context.canvas.getBoundingClientRect();
 		fillRect(0, 0, w, h, `rgba(255, 255, 255, ${1 - (now - load) / LOAD_TIME})`);
 	}
-	
+};
+
+/// Timing
+let then = performance.now();
+let frame = now => {
+	let dt = now - then;
+	then = now;
+
+	update(dt);
+	render();
+
 	window.requestAnimationFrame(frame);
 };
 
