@@ -88,6 +88,28 @@ let is_active_colliding = () => {
 	return false;
 };
 
+let try_kicks = () => {
+	if (!is_active_colliding()) return true;
+
+	active_piece.x += 1;
+	if (!is_active_colliding()) return true;
+	active_piece.x -= 1;
+
+	active_piece.x -= 1;
+	if (!is_active_colliding()) return true;
+	active_piece.x += 1;
+
+	active_piece.y += 1;
+	if (!is_active_colliding()) return true;
+	active_piece.y -= 1;
+
+	active_piece.y -= 1;
+	if (!is_active_colliding()) return true;
+	active_piece.y += 1;
+
+	return false;
+};
+
 /// Controls
 let move_left = () => {
 	active_piece.x -= 1;
@@ -103,11 +125,11 @@ let fast_drop = () => {
 };
 let turn_left = () => {
 	active_piece.r = mod(active_piece.r - 1, 4);
-	if (is_active_colliding()) active_piece.r = mod(active_piece.r + 1, 4);
+	if (!try_kicks()) active_piece.r = mod(active_piece.r + 1, 4);
 };
 let turn_right = () => {
 	active_piece.r = mod(active_piece.r + 1, 4);
-	if (is_active_colliding()) active_piece.r = mod(active_piece.r - 1, 4);
+	if (!try_kicks()) active_piece.r = mod(active_piece.r - 1, 4);
 };
 let pause_game = () => { console.log("pause_game"); };
 
