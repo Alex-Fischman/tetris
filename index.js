@@ -21,6 +21,7 @@ let text = (s, x, y, style) => { context.fillStyle   = style; context.fillText(s
 let rect = (x, y, w, h) => ({ x, y, w, h });
 let fx = (rect, f) => rect.x + rect.w * f;
 let fy = (rect, f) => rect.y + rect.h * f;
+let rect_point = (rect, x, y) => x > rect.x && x < fx(rect, 1) && y > rect.y && y < fy(rect, 1);
 
 let strokeRect = (rect, style) => {
 	context.strokeStyle = style;
@@ -31,9 +32,18 @@ let fillRect   = (rect, style) => {
 	context.fillRect(rect.x, rect.y, rect.w, rect.h);
 };
 
-document.addEventListener("pointerdown", e => {
-	window.alert(`(${e.x}, ${e.y})`);
-});
+let move_left = () => { console.log("move_left"); };
+let move_right = () => { console.log("move_right"); };
+let turn_left = () => { console.log("turn_left"); };
+let turn_right = () => { console.log("turn_right"); };
+let fast_drop = () => { console.log("fast_drop"); };
+let pause_game = () => { console.log("pause_game"); };
+
+let button_rects = [undefined, undefined, undefined,  undefined, undefined,  undefined];
+let button_funcs = [move_left, turn_left, pause_game, fast_drop, turn_right, move_right]
+document.addEventListener("pointerdown", e => button_rects.map((r, i) => {
+	if (rect_point(r, e.x, e.y)) button_funcs[i]();
+}));
 
 let update = dt => {};
 
@@ -115,6 +125,14 @@ let render = () => {
 			stroke(BOARD_COLOR);
 
 			drawArrow(fx(button, 1/4), fy(button, 1/2), Math.PI, BOARD_COLOR);
+			button_rects[0] = button;
+		} else if (i == 4) {
+			context.moveTo(fx(button, 1/4), fy(button, 1/2));
+			context.lineTo(fx(button, 3/4), fy(button, 1/2));
+			stroke(BOARD_COLOR);
+
+			drawArrow(fx(button, 3/4), fy(button, 1/2), 0, BOARD_COLOR);
+			button_rects[5] = button;
 		} else if (i == 1) {
 			let a = Math.PI * 3/4;
 			let b = Math.PI * 5/4;
@@ -124,7 +142,29 @@ let render = () => {
 			context.arc(fx(button, 1/2), fy(button, 1/2), r, a, b, true);
 			stroke(BOARD_COLOR);
 
-			drawArrow(fx(button, 1/2) + r * Math.cos(a), fy(button, 1/2) - r * Math.sin(a), c, BOARD_COLOR);
+			drawArrow(
+				fx(button, 1/2) + r * Math.cos(a),
+				fy(button, 1/2) - r * Math.sin(a),
+				c,
+				BOARD_COLOR
+			);
+			button_rects[1] = button;
+		} else if (i == 3) {
+			let a = Math.PI * 1/4;
+			let b = Math.PI * 7/4;
+			let c = a - TURN_BUTTON_ARROW_ANGLE_OFFSET;
+
+			context.beginPath();
+			context.arc(fx(button, 1/2), fy(button, 1/2), r, a, b, false);
+			stroke(BOARD_COLOR);
+
+			drawArrow(
+				fx(button, 1/2) + r * Math.cos(a),
+				fy(button, 1/2) - r * Math.sin(a),
+				c,
+				BOARD_COLOR
+			);
+			button_rects[4] = button;
 		} else if (i == 2) for (let j = 0; j < 2; j++) {
 			let mini = rect(button.x, fy(button, j/2), button.w, button.h/2);
 			strokeRect(mini, BACKGROUND_COLOR);
@@ -135,35 +175,21 @@ let render = () => {
 				context.moveTo(fx(mini, 2/3), fy(mini, 1/4));
 				context.lineTo(fx(mini, 2/3), fy(mini, 3/4));
 				stroke(BOARD_COLOR);
-			} else if (j == 1) {
 
+				button_rects[2] = mini;
+			} else if (j == 1) {
 				context.moveTo(fx(mini, 1/2), fy(mini, 1/4));
 				context.lineTo(fx(mini, 1/2), fy(mini, 3/4));
 				stroke(BOARD_COLOR);
 
 				drawArrow(fx(mini, 1/2), fy(mini, 3/4), Math.PI/2, BOARD_COLOR);
+				button_rects[3] = mini;
 			}
-		} else if (i == 3) {
-			let a = Math.PI * 1/4;
-			let b = Math.PI * 7/4;
-			let c = a - TURN_BUTTON_ARROW_ANGLE_OFFSET;
-
-			context.beginPath();
-			context.arc(fx(button, 1/2), fy(button, 1/2), r, a, b, false);
-			stroke(BOARD_COLOR);
-
-			drawArrow(fx(button, 1/2) + r * Math.cos(a), fy(button, 1/2) - r * Math.sin(a), c, BOARD_COLOR);
-		} else if (i == 4) {
-			context.moveTo(fx(button, 1/4), fy(button, 1/2));
-			context.lineTo(fx(button, 3/4), fy(button, 1/2));
-			stroke(BOARD_COLOR);
-
-			drawArrow(fx(button, 3/4), fy(button, 1/2), 0, BOARD_COLOR);
 		}
 	}
 
 	// Draw side panel
-	text("Score: " + localStorage.getItem("Score"), fx(board, 1) + 10, fy(board, 0) + 10, BOARD_COLOR);
+	text("Score: " + localStorage.getItem("Score"), fx(board, 1) + 10, board.y + 10, BOARD_COLOR);
 };
 
 let then = performance.now();
