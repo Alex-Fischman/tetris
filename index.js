@@ -10,11 +10,18 @@ const TURN_BUTTON_ARROW_ANGLE_OFFSET = 0.3;
 const SLOW_DROP_BUTTON_OFFSET = -0.4;
 const FAST_DROP_BUTTON_OFFSET = 0.3;
 
+const GLYPH_WIDTH = 1/7;
+const GLYPH_HEIGHT = 2;
+const GLYPH_KERNING = 1.3;
+const GLYPH_PADDING = 0.8;
+
 const BOARD_COLOR = "#111";
 const BACKGROUND_COLOR = "#EEE";
 const BUTTON_COLOR = "#DDD";
 const PIECE_COLORS = ["#1EE", "#11E", "#EA1", "#EE1", "#1E1", "#E1E", "#E11"];
 
+/// Utility
+let PI = Math.PI;
 // Correct for negative numbers
 let mod = (n, m) => ((n % m) + m) % m;
 
@@ -26,17 +33,18 @@ let text = (s, x, y, style) => { context.fillStyle   = style; context.fillText(s
 
 /// Rect struct
 let rect = (x, y, w, h) => ({ x, y, w, h });
-let fx = (rect, f) => rect.x + rect.w * f;
-let fy = (rect, f) => rect.y + rect.h * f;
-let rect_point = (rect, x, y) => x > rect.x && x < fx(rect, 1) && y > rect.y && y < fy(rect, 1);
+let fx = (r, f) => r.x + r.w * f;
+let fy = (r, f) => r.y + r.h * f;
+let rect_point = (r, x, y) => x > r.x && x < fx(r, 1) && y > r.y && y < fy(r, 1);
+let scale = (r, s) => rect(fx(r, (1 - s) / 2), fy(r, (1 - s) / 2), r.w * s, r.h * s);
 
-let strokeRect = (rect, style) => {
+let strokeRect = (r, style) => {
 	context.strokeStyle = style;
-	context.strokeRect(rect.x, rect.y, rect.w, rect.h);
+	context.strokeRect(r.x, r.y, r.w, r.h);
 };
-let fillRect   = (rect, style) => {
+let fillRect   = (r, style) => {
 	context.fillStyle = style;
-	context.fillRect(rect.x, rect.y, rect.w, rect.h);
+	context.fillRect(r.x, r.y, r.w, r.h);
 };
 
 /// Piece shapes
@@ -71,7 +79,7 @@ let load = performance.now();
 /// Utility functions
 let get_active_cells = () => pieces[active_piece.i].map(([x, y]) => {
 	let c = centers[active_piece.i];
-	let theta = Math.PI / 2 * active_piece.r;
+	let theta = PI / 2 * active_piece.r;
 	let cos = Math.round(Math.cos(theta));
 	let sin = Math.round(Math.sin(theta));
 	return [
@@ -230,7 +238,7 @@ let render = () => {
 			context.lineTo(fx(button, 1/4), fy(button, 1/2));
 			stroke(BOARD_COLOR);
 
-			drawArrow(fx(button, 1/4), fy(button, 1/2), Math.PI, BOARD_COLOR);
+			drawArrow(fx(button, 1/4), fy(button, 1/2), PI, BOARD_COLOR);
 			button_rects[0] = button;
 		} else if (i == 4) {
 			context.moveTo(fx(button, 1/4), fy(button, 1/2));
@@ -240,8 +248,8 @@ let render = () => {
 			drawArrow(fx(button, 3/4), fy(button, 1/2), 0, BOARD_COLOR);
 			button_rects[5] = button;
 		} else if (i == 1) {
-			let a = Math.PI * 3/4;
-			let b = Math.PI * 5/4;
+			let a = PI * 3/4;
+			let b = PI * 5/4;
 			let c = a + TURN_BUTTON_ARROW_ANGLE_OFFSET;
 
 			context.beginPath();
@@ -256,12 +264,12 @@ let render = () => {
 			);
 			button_rects[1] = button;
 		} else if (i == 3) {
-			let a = Math.PI * 1/4;
-			let b = Math.PI * 7/4;
+			let a = PI * 1/4;
+			let b = PI * 7/4;
 			let c = a - TURN_BUTTON_ARROW_ANGLE_OFFSET;
 
 			context.beginPath();
-			context.arc(fx(button, 1/2), fy(button, 1/2), r, a, b, false);
+			context.arc(fx(button, 1/2), fy(button, 1/2), r, a, b);
 			stroke(BOARD_COLOR);
 
 			drawArrow(
@@ -288,15 +296,194 @@ let render = () => {
 				context.lineTo(fx(mini, 1/2), fy(mini, 3/4));
 				stroke(BOARD_COLOR);
 
-				drawArrow(fx(mini, 1/2), fy(mini, 3/4), Math.PI/2, BOARD_COLOR);
+				drawArrow(fx(mini, 1/2), fy(mini, 3/4), PI/2, BOARD_COLOR);
 				button_rects[3] = mini;
 			}
 		}
 	}
 
 	// Side panel
-	text("Level: " + localStorage.getItem("Level"), fx(board, 1) + 10, board.y + 10, BOARD_COLOR);
-	text("Score: " + localStorage.getItem("Score"), fx(board, 1) + 10, board.y + 60, BOARD_COLOR);
+	let panel = rect(fx(board, 1) + context.lineWidth / 2, board.y, w - fx(board, 1), fy(board, 1));
+	let glyphWidth = panel.w * GLYPH_WIDTH;
+	let glyphHeight = glyphWidth * GLYPH_HEIGHT;
+	
+	let drawLetterS = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.arc(   fx(glyph, 1/2), fy(glyph, 1/4), glyph.w / 2, 0, PI * 1/2, true);
+		context.arc(   fx(glyph, 1/2), fy(glyph, 3/4), glyph.w / 2, PI * 3/2, PI);
+		stroke(style);
+	};
+	let drawLetterC = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.arc(   fx(glyph, 1/2), fy(glyph, 1/4), glyph.w / 2, 0, PI, true);
+		context.lineTo(glyph.x,        fy(glyph, 3/4));
+		context.arc(   fx(glyph, 1/2), fy(glyph, 3/4), glyph.w / 2, PI, 0, true);
+		stroke(style);
+	};
+	let drawLetterO = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.arc(   fx(glyph, 1/2), fy(glyph, 1/4), glyph.w / 2, 0, PI, true);
+		context.lineTo(glyph.x,        fy(glyph, 3/4));
+		context.arc(   fx(glyph, 1/2), fy(glyph, 3/4), glyph.w / 2, PI, 0, true);
+		context.lineTo(fx(glyph, 1),   fy(glyph, 1/4));
+		stroke(style);
+	};
+	let drawLetterR = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 0),   fy(glyph, 1));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 1/2), fy(glyph, 0));
+		context.arc(   fx(glyph, 2/3), fy(glyph, 1/4), glyph.w / 2, PI * 3/2, PI / 2);
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1/2));
+		context.lineTo(fx(glyph, 1/2), fy(glyph, 1/2));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 1));
+		stroke(style);
+	};
+	let drawLetterE = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 1),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1/2));
+		context.lineTo(fx(glyph, 1/2), fy(glyph, 1/2));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1/2));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 1));
+		stroke(style);
+	};
+	let drawLetterL = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 0),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 1));
+		stroke(style);
+	};
+	let drawLetterV = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 0),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 1/2), fy(glyph, 1));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 0));
+		stroke(style);
+	};
+	let drawNumber0 = (x, y, style) => {
+		drawLetterO(x, y, style);
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 0),   fy(glyph, 1));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 0));
+		stroke(style);
+	};
+	let drawNumber1 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 0),   fy(glyph, 1/4));
+		context.lineTo(fx(glyph, 1/2), fy(glyph, 0));
+		context.lineTo(fx(glyph, 1/2), fy(glyph, 1));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 1));
+		stroke(style);
+	};
+	let drawNumber2 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.arc(   fx(glyph, 1/2), fy(glyph, 1/4), glyph.w / 2, PI, PI * 1/4);
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 1));
+		stroke(style);
+	};
+	let drawNumber3 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.arc(   fx(glyph, 1/2), fy(glyph, 1/4), glyph.w / 2, PI, PI * 1/2);
+		context.arc(   fx(glyph, 1/2), fy(glyph, 3/4), glyph.w / 2, PI * 3/2, PI);
+		stroke(style);
+	};
+	let drawNumber4 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 1/4), fy(glyph, 0));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1/2));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 1/2));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 1));
+		stroke(style);
+	};
+	let drawNumber5 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 0.9), fy(glyph, 0));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1/2));
+		context.arc(   fx(glyph, 1/2), fy(glyph, 3/4), glyph.w / 2, PI * 3/2, PI / 2);
+		context.lineTo(fx(glyph, 0),   fy(glyph, 1));
+		stroke(style);
+	};
+	let drawNumber6 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.arc(   fx(glyph, 1/2), fy(glyph, 3/4), glyph.w / 2, PI, PI * 3);
+		context.arc(   fx(glyph, 1),   fy(glyph, 4/9), glyph.w,     PI, PI * 4/3);
+		stroke(style);
+	};
+	let drawNumber7 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.moveTo(fx(glyph, 0),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 1),   fy(glyph, 0));
+		context.lineTo(fx(glyph, 1/2), fy(glyph, 1));
+		stroke(style);
+	};
+	let drawNumber8 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.arc(   fx(glyph, 1/2), fy(glyph, 1/4), glyph.w / 2, PI * 1/2, PI * 5/2);
+		context.arc(   fx(glyph, 1/2), fy(glyph, 3/4), glyph.w / 2, PI * 3/2, PI * 7/2);
+		stroke(style);
+	};
+	let drawNumber9 = (x, y, style) => {
+		let glyph = scale(rect(x, y, glyphWidth, glyphHeight), GLYPH_PADDING);
+		context.beginPath();
+		context.arc(   fx(glyph, 1/2), fy(glyph, 1/4), glyph.w / 2, 0, PI * 2);
+		context.arc(   fx(glyph, 0),   fy(glyph, 5/9), glyph.w,     0, PI * 1/3);
+		stroke(style);
+	};
+	
+	let y = panel.y;
+	drawLetterS(panel.x + glyphWidth * GLYPH_KERNING * 0, y);
+	drawLetterC(panel.x + glyphWidth * GLYPH_KERNING * 1, y);
+	drawLetterO(panel.x + glyphWidth * GLYPH_KERNING * 2, y);
+	drawLetterR(panel.x + glyphWidth * GLYPH_KERNING * 3, y);
+	drawLetterE(panel.x + glyphWidth * GLYPH_KERNING * 4, y);
+
+	y += glyphHeight;
+	drawNumber0(panel.x + glyphWidth * GLYPH_KERNING * 0, y);
+	drawNumber1(panel.x + glyphWidth * GLYPH_KERNING * 1, y);
+	drawNumber2(panel.x + glyphWidth * GLYPH_KERNING * 2, y);
+	drawNumber3(panel.x + glyphWidth * GLYPH_KERNING * 3, y);
+	drawNumber4(panel.x + glyphWidth * GLYPH_KERNING * 4, y);
+
+	y += glyphHeight;
+	drawLetterL(panel.x + glyphWidth * GLYPH_KERNING * 0, y);
+	drawLetterE(panel.x + glyphWidth * GLYPH_KERNING * 1, y);
+	drawLetterV(panel.x + glyphWidth * GLYPH_KERNING * 2, y);
+	drawLetterE(panel.x + glyphWidth * GLYPH_KERNING * 3, y);
+	drawLetterL(panel.x + glyphWidth * GLYPH_KERNING * 4, y);
+
+	y += glyphHeight;
+	drawNumber5(panel.x + glyphWidth * GLYPH_KERNING * 0, y);
+	drawNumber6(panel.x + glyphWidth * GLYPH_KERNING * 1, y);
+	drawNumber7(panel.x + glyphWidth * GLYPH_KERNING * 2, y);
+	drawNumber8(panel.x + glyphWidth * GLYPH_KERNING * 3, y);
+	drawNumber9(panel.x + glyphWidth * GLYPH_KERNING * 4, y);
+
+	// text("Level: " + localStorage.getItem("Level"), panel.x + 10, panel.y + 10, BOARD_COLOR);
+	// text("Score: " + localStorage.getItem("Score"), panel.x + 10, panel.y + 60, BOARD_COLOR);
 
 	/// Load screen
 	let now = performance.now();
