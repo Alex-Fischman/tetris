@@ -56,12 +56,9 @@ let fillRect   = (r, style) => {
 };
 
 /// Game state
-let active_piece = {
-	x: 0,
-	y: 4,
-	r: 0,
-	i: 0,
-};
+let active_piece = { x: 0, y: 0, r: 0, i: 0 };
+
+let bag = [];
 
 let static_board = [];
 for (let i = 0; i < BOARD_ROWS; i++) {
@@ -75,6 +72,19 @@ let score = 0;
 let last_drop_time = performance.now();
 
 /// Utility functions
+let fill_bag = () => bag = [...Array(7).keys()]
+	.map(value => ({ value, sort: Math.random() }))
+	.sort((a, b) => a.sort - b.sort)
+	.map(({ value }) => value);
+
+let next_piece = () => {
+	if (bag.length == 0) fill_bag();
+	active_piece = { x: 0, y: 0, r: 0, i: bag.pop() };
+};
+
+// we need to generate the first bag and piece here
+next_piece();
+
 let get_active_cells = () => pieces[active_piece.i].map(([x, y]) => {
 	let c = centers[active_piece.i];
 	let theta = PI / 2 * active_piece.r;
@@ -133,12 +143,12 @@ let fast_drop = () => {
 };
 
 let piece_has_landed = () => {
-	for (let [x, y] of get_active_cells()) static_board[y][x] = PIECE_COLORS[active_piece.i];
+	for (let [x, y] of get_active_cells()) {
+		if (y < 0) window.location.reload();
+		else static_board[y][x] = PIECE_COLORS[active_piece.i];
+	}
 
-	active_piece.i = mod(active_piece.i + 1, 7);
-	active_piece.x = 0;
-	active_piece.y = 0;
-	active_piece.r = 0;
+	next_piece();
 
 	last_drop_time = performance.now();
 
