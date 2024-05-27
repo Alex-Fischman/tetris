@@ -60,14 +60,10 @@ let active_piece = { x: 0, y: 0, r: 0, i: 0 };
 
 let bag = [];
 
-let static_board = [];
-for (let i = 0; i < BOARD_ROWS; i++) {
-	let row = [];
-	for (let j = 0; j < BOARD_COLUMNS; j++) row.push(BOARD_COLOR);
-	static_board.push(row);
-}
+let empty_row = () => Array(BOARD_COLUMNS).fill(BOARD_COLOR);
+let static_board = Array(BOARD_ROWS).fill(0).map(empty_row);
 
-let level = 1;
+let lines = 0;
 let score = 0;
 let last_drop_time = performance.now();
 
@@ -113,7 +109,7 @@ let is_active_colliding = () => {
 	return false;
 };
 
-let row_time = () => Math.pow((0.8 - ((level - 1) * 0.007)), (level - 1)) * 1000;;
+let row_time = () => Math.pow((0.8 - ((lines / 10) * 0.007)), (lines / 10)) * 1000;
 
 let try_kicks = () => {
 	if (!is_active_colliding()) return true;
@@ -152,8 +148,16 @@ let piece_has_landed = () => {
 
 	last_drop_time = performance.now();
 
-	// TODO: check for line clears
-	// TODO: score -> level
+	let lines_cleared = 0;
+	for (let i = 0; i < BOARD_ROWS; i++) if (static_board[i].every(x => x != BOARD_COLOR)) {
+		lines_cleared++;
+
+		for (let j = i; j > 0; j--) static_board[j] = static_board[j - 1];
+		static_board[0] = empty_row();
+	}
+
+	lines += lines_cleared;
+	score += lines / 10 * [0, 40, 100, 300, 1200][lines_cleared];
 };
 
 /// Controls
