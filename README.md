@@ -1,5 +1,5 @@
 # Tetris
-Tetris in one day, and only 200 lines of Javascript.
+Tetris in one day and only 200 lines of Javascript.
 
 # Instructions
 - Keyboard: AD to move, W to rotate, Space to hard drop.
