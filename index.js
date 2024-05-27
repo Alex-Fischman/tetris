@@ -1,12 +1,8 @@
 /// Constants
-const LOAD_TIME = 500;
-const BUTTON_HEIGHT_SPLIT = 2/3;
-
+const BUTTON_HEIGHT_SPLIT = 1/2;
 const BOARD_COLOR = "#111";
 const GRID_COLOR = "#EEE";
-const BUTTON_COLOR = "#DDD";
 
-/// "Tetris" constants
 const BOARD_COLUMNS = 10;
 const BOARD_ROWS = 20;
 
@@ -29,7 +25,6 @@ const PIECE_COLORS = colors("1", "A", "E");
 const GHOST_COLORS = colors("A", "C", "E");
 
 /// Utility
-let PI = Math.PI;
 // Correct for negative numbers
 let mod = (n, m) => ((n % m) + m) % m;
 
@@ -41,10 +36,7 @@ let text = (s, x, y, style) => { context.fillStyle   = style; context.fillText(s
 
 /// Rect struct
 let rect = (x, y, w, h) => ({ x, y, w, h });
-let fx = (r, f) => r.x + r.w * f;
-let fy = (r, f) => r.y + r.h * f;
-let rect_point = (r, x, y) => x > r.x && x < fx(r, 1) && y > r.y && y < fy(r, 1);
-let scale = (r, s) => rect(fx(r, (1 - s) / 2), fy(r, (1 - s) / 2), r.w * s, r.h * s);
+let rect_point = (r, x, y) => x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.h;
 
 let strokeRect = (r, style) => {
 	context.strokeStyle = style;
@@ -83,7 +75,7 @@ next_piece();
 
 let get_active_cells = () => pieces[active_piece.i].map(([x, y]) => {
 	let c = centers[active_piece.i];
-	let theta = PI / 2 * active_piece.r;
+	let theta = Math.PI / 2 * active_piece.r;
 	let cos = Math.round(Math.cos(theta));
 	let sin = Math.round(Math.sin(theta));
 	return [
@@ -173,20 +165,15 @@ let hard_drop = () => {
 	fast_drop();
 	piece_has_landed();
 };
-let turn_left = () => {
-	active_piece.r = mod(active_piece.r - 1, 4);
-	if (!try_kicks()) active_piece.r = mod(active_piece.r + 1, 4);
-};
 let turn_right = () => {
 	active_piece.r = mod(active_piece.r + 1, 4);
 	if (!try_kicks()) active_piece.r = mod(active_piece.r - 1, 4);
 };
-let pause_game = () => { console.log("TODO: pause_game"); };
 
 /// Input handlers
-let button_rects = [undefined, undefined,  undefined , undefined, undefined, undefined ];
-let button_keys  = ["KeyJ",    "Escape",   "KeyL"    , "KeyA",    "Space",   "KeyD"    ];
-let button_funcs = [turn_left, pause_game, turn_right, move_left, hard_drop, move_right];
+let button_rects = [undefined, undefined, undefined,  undefined ];
+let button_keys  = ["Space",   "KeyA",    "KeyL",     "KeyD"    ];
+let button_funcs = [hard_drop, move_left, turn_right, move_right];
 
 document.addEventListener("pointerdown", e => button_rects.map((r, i) => {
 	if (rect_point(r, e.x, e.y)) button_funcs[i]();
@@ -232,8 +219,8 @@ let render = () => {
 
 	let drawCell = (i, j, style) => {
 		let cell = rect(
-			fx(board, i / BOARD_COLUMNS),
-			fy(board, j / BOARD_ROWS),
+			board.x + board.w * i / BOARD_COLUMNS,
+			board.y + board.h * j / BOARD_ROWS,
 			board.w / BOARD_COLUMNS,
 			board.h / BOARD_ROWS
 		);
@@ -248,18 +235,10 @@ let render = () => {
 	for (let [x, y] of get_active_cells()) drawCell(x, y, PIECE_COLORS[active_piece.i]);
 
 	// Buttons
-	for (let i = 0; i < 6; i++) {
-		let x = i % 3;
-		let y = Math.floor(i / 3);
-		let button = rect(
-			w * x / 3,
-			h * (y == 0 ? 0 : BUTTON_HEIGHT_SPLIT),
-			w / 3,
-			h * (y == 0 ? BUTTON_HEIGHT_SPLIT : 1 - BUTTON_HEIGHT_SPLIT),
-		);
-		let r = button.w / 4;
-		button_rects[i] = button;
-	}
+	button_rects[0] = rect(0,       0,                       w,     h *      BUTTON_HEIGHT_SPLIT);
+	button_rects[1] = rect(w * 0/3, h * BUTTON_HEIGHT_SPLIT, w / 3, h * (1 - BUTTON_HEIGHT_SPLIT));
+	button_rects[2] = rect(w * 1/3, h * BUTTON_HEIGHT_SPLIT, w / 3, h * (1 - BUTTON_HEIGHT_SPLIT));
+	button_rects[3] = rect(w * 2/3, h * BUTTON_HEIGHT_SPLIT, w / 3, h * (1 - BUTTON_HEIGHT_SPLIT));
 };
 
 /// Timing
