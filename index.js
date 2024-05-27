@@ -453,6 +453,18 @@ let render = () => {
 		context.arc(   fx(glyph, 0),   fy(glyph, 5/9), glyph.w,     0, PI * 1/3);
 		stroke(style);
 	};
+	let drawNumber = [
+		drawNumber0, drawNumber1, drawNumber2, drawNumber3, drawNumber4,
+		drawNumber5, drawNumber6, drawNumber7, drawNumber8, drawNumber9,
+	];
+	let drawInteger = (x, y, n) => {
+		let divisor = 1;
+		for (let i = 0; i < 5; i++) {
+			let digit = mod(Math.floor(n / divisor), 10);
+			divisor *= 10;
+			drawNumber[digit](x + glyphWidth * GLYPH_KERNING * (4 - i), y);
+		}
+	};
 	
 	let y = panel.y;
 	drawLetterS(panel.x + glyphWidth * GLYPH_KERNING * 0, y);
@@ -462,11 +474,7 @@ let render = () => {
 	drawLetterE(panel.x + glyphWidth * GLYPH_KERNING * 4, y);
 
 	y += glyphHeight;
-	drawNumber0(panel.x + glyphWidth * GLYPH_KERNING * 0, y);
-	drawNumber1(panel.x + glyphWidth * GLYPH_KERNING * 1, y);
-	drawNumber2(panel.x + glyphWidth * GLYPH_KERNING * 2, y);
-	drawNumber3(panel.x + glyphWidth * GLYPH_KERNING * 3, y);
-	drawNumber4(panel.x + glyphWidth * GLYPH_KERNING * 4, y);
+	drawInteger(panel.x, y, 1234);
 
 	y += glyphHeight;
 	drawLetterL(panel.x + glyphWidth * GLYPH_KERNING * 0, y);
@@ -476,14 +484,7 @@ let render = () => {
 	drawLetterL(panel.x + glyphWidth * GLYPH_KERNING * 4, y);
 
 	y += glyphHeight;
-	drawNumber5(panel.x + glyphWidth * GLYPH_KERNING * 0, y);
-	drawNumber6(panel.x + glyphWidth * GLYPH_KERNING * 1, y);
-	drawNumber7(panel.x + glyphWidth * GLYPH_KERNING * 2, y);
-	drawNumber8(panel.x + glyphWidth * GLYPH_KERNING * 3, y);
-	drawNumber9(panel.x + glyphWidth * GLYPH_KERNING * 4, y);
-
-	// text("Level: " + localStorage.getItem("Level"), panel.x + 10, panel.y + 10, BOARD_COLOR);
-	// text("Score: " + localStorage.getItem("Score"), panel.x + 10, panel.y + 60, BOARD_COLOR);
+	drawInteger(panel.x, y, 56789);
 
 	/// Load screen
 	let now = performance.now();
