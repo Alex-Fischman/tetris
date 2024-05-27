@@ -170,13 +170,13 @@ let render = () => {
 	for (let [x, y] of ghost_cells)        drawCell(x, y, GHOST_COLORS[active_piece.i]);
 	for (let [x, y] of get_active_cells()) drawCell(x, y, PIECE_COLORS[active_piece.i]);
 
-	button_rects[0] = { x: 0,       y: 0,       w: w,     h: h * 2/3 };
-	button_rects[1] = { x: w * 0/3, y: h * 2/3, w: w / 3, h: h * 1/3 };
-	button_rects[2] = { x: w * 1/3, y: h * 2/3, w: w / 3, h: h * 1/3 };
-	button_rects[3] = { x: w * 2/3, y: h * 2/3, w: w / 3, h: h * 1/3 };
+	button_rects[0] = { x: 0,       y: 0,     w: w,     h: h / 2 };
+	button_rects[1] = { x: w * 0/3, y: h / 2, w: w / 3, h: h / 2 };
+	button_rects[2] = { x: w * 1/3, y: h / 2, w: w / 3, h: h / 2 };
+	button_rects[3] = { x: w * 2/3, y: h / 2, w: w / 3, h: h / 2 };
 
-	context.moveTo(0, h * 2/3);
-	context.lineTo(w, h * 2/3);
+	context.moveTo(0, h / 2);
+	context.lineTo(w, h / 2);
 	context.strokeStyle = LINE_COLOR;
 	context.lineWidth = 5;
 	context.stroke();
