@@ -1,10 +1,4 @@
-/// Constants
-const BUTTON_HEIGHT_SPLIT = 1/2;
-const BOARD_COLOR = "#111";
-const GRID_COLOR = "#EEE";
-
-const BOARD_COLUMNS = 10;
-const BOARD_ROWS = 20;
+let context = document.getElementById("canvas").getContext("2d");
 
 let pieces = [
 	[[3, 0], [4, 0], [5, 0], [6, 0]],
@@ -21,47 +15,26 @@ let colors = (a, b, c) => [
 	`#${a}${c}${c}`, `#${a}${a}${c}`, `#${c}${b}${a}`, `#${c}${c}${a}`,
 	`#${a}${c}${a}`, `#${c}${a}${c}`, `#${c}${a}${a}`,
 ];
+
 const PIECE_COLORS = colors("1", "A", "E");
 const GHOST_COLORS = colors("A", "C", "E");
+const BOARD_COLOR = "#111";
 
-/// Utility
-// Correct for negative numbers
-let mod = (n, m) => ((n % m) + m) % m;
-
-/// Drawing
-let context = document.getElementById("canvas").getContext("2d");
-let stroke =         style  => { context.strokeStyle = style; context.stroke();          };
-let fill   =         style  => { context.fillStyle   = style; context.fill();            };
-let text = (s, x, y, style) => { context.fillStyle   = style; context.fillText(s, x, y); };
-
-/// Rect struct
-let rect = (x, y, w, h) => ({ x, y, w, h });
-let rect_point = (r, x, y) => x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.h;
-
-/// Game state
 let active_piece = { x: 0, y: 0, r: 0, i: 0 };
-
 let bag = [];
 
-let empty_row = () => Array(BOARD_COLUMNS).fill(BOARD_COLOR);
-let static_board = Array(BOARD_ROWS).fill(0).map(empty_row);
-
-let lines = 0;
-let last_drop_time = performance.now();
-
-/// Utility functions
-let fill_bag = () => bag = [...Array(7).keys()]
-	.map(value => ({ value, sort: Math.random() }))
-	.sort((a, b) => a.sort - b.sort)
-	.map(({ value }) => value);
-
 let next_piece = () => {
-	if (bag.length == 0) fill_bag();
+	if (bag.length == 0) bag = [...Array(7).keys()]
+		.map(value => ({ value, sort: Math.random() }))
+		.sort((a, b) => a.sort - b.sort)
+		.map(({ value }) => value);
+
 	active_piece = { x: 0, y: 0, r: 0, i: bag.pop() };
 };
-
-// we need to generate the first bag and piece here
 next_piece();
+
+let empty_row = () => Array(10).fill(BOARD_COLOR);
+let stack = Array(20).fill(0).map(empty_row);
 
 let get_active_cells = () => pieces[active_piece.i].map(([x, y]) => {
 	let c = centers[active_piece.i];
@@ -74,24 +47,14 @@ let get_active_cells = () => pieces[active_piece.i].map(([x, y]) => {
 	];
 });
 
-let get_ghost_cells = () => {
-	let saved_y = active_piece.y;
-	fast_drop();
-	let saved_cells = get_active_cells();
-	active_piece.y = saved_y;
-	return saved_cells;
-};
-
 let is_active_colliding = () => {
 	for (let [x, y] of get_active_cells()) {
-		if (x < 0 || x >= BOARD_COLUMNS || y >= BOARD_ROWS) return true;
+		if (x < 0 || x >= 10 || y >= 20) return true;
 		if (y < 0) continue; // some pieces start above the board
-		if (static_board[y][x] != BOARD_COLOR) return true;
+		if (stack[y][x] != BOARD_COLOR) return true;
 	}
 	return false;
 };
-
-let row_time = () => Math.pow((0.8 - ((lines / 10) * 0.007)), (lines / 10)) * 1000;
 
 let try_kicks = () => {
 	if (!is_active_colliding()) return true;
@@ -120,20 +83,25 @@ let fast_drop = () => {
 	active_piece.y -= 1;
 };
 
+let lines = 0;
+let last_drop_time = performance.now();
+
+let row_time = () => Math.pow((0.8 - ((lines / 10) * 0.007)), (lines / 10)) * 1000;
+
 let piece_has_landed = () => {
 	for (let [x, y] of get_active_cells()) {
 		if (y < 0) window.location.reload();
-		else       static_board[y][x] = PIECE_COLORS[active_piece.i];
+		else       stack[y][x] = PIECE_COLORS[active_piece.i];
 	}
 
 	next_piece();
 	last_drop_time = performance.now();
 
-	for (let i = 0; i < BOARD_ROWS; i++) if (static_board[i].every(x => x != BOARD_COLOR)) {
+	for (let i = 0; i < 20; i++) if (stack[i].every(x => x != BOARD_COLOR)) {
 		lines++;
 
-		for (let j = i; j > 0; j--) static_board[j] = static_board[j - 1];
-		static_board[0] = empty_row();
+		for (let j = i; j > 0; j--) stack[j] = stack[j - 1];
+		stack[0] = empty_row();
 	}
 };
 
@@ -151,6 +119,9 @@ let hard_drop = () => {
 	piece_has_landed();
 };
 let turn_right = () => {
+	// Correct for negative numbers
+	let mod = (n, m) => ((n % m) + m) % m;
+
 	active_piece.r = mod(active_piece.r + 1, 4);
 	if (!try_kicks()) active_piece.r = mod(active_piece.r - 1, 4);
 };
@@ -161,13 +132,12 @@ let button_keys  = ["Space",   "KeyA",    "KeyW",     "KeyD"    ];
 let button_funcs = [hard_drop, move_left, turn_right, move_right];
 
 document.addEventListener("pointerdown", e => button_rects.map((r, i) => {
-	if (rect_point(r, e.x, e.y)) button_funcs[i]();
+	if ((r.x < e.x && e.x < r.x + r.w) && (r.y < e.y && e.y < r.y + r.h)) button_funcs[i]();
 }));
 document.addEventListener("keydown", e => button_keys.map((k, i) => {
 	if (e.code == k) button_funcs[i]();
 }));
 
-/// Update
 let update = dt => {
 	let now = performance.now();
 
@@ -183,7 +153,6 @@ let update = dt => {
 	}
 };
 
-/// Render
 let render = () => {
 	let {width: w, height: h} = context.canvas.getBoundingClientRect();
 	context.canvas.width = w;
@@ -192,36 +161,31 @@ let render = () => {
 	context.fillStyle = BOARD_COLOR;
 	context.fillRect(0, 0, w, h);
 
-	// Board
+	button_rects[0] = { x: 0,       y: 0,     w: w,     h: h / 2 };
+	button_rects[1] = { x: w * 0/3, y: h / 2, w: w / 3, h: h / 2 };
+	button_rects[2] = { x: w * 1/3, y: h / 2, w: w / 3, h: h / 2 };
+	button_rects[3] = { x: w * 2/3, y: h / 2, w: w / 3, h: h / 2 };
+
 	let bw = h / 2;
 	let bh = h;
 	let bx = w / 2 - bw / 2;
-	let by = 0;
 
 	let drawCell = (i, j, style) => {
 		context.fillStyle = style;
-		context.fillRect(
-			bx + bw * i / BOARD_COLUMNS,
-			by + bh * j / BOARD_ROWS,
-			bw / BOARD_COLUMNS + 1,
-			bh / BOARD_ROWS + 1
-		);
+		context.fillRect(bx + bw * i / 10, bh * j / 20, bw / 10 + 1, bh / 20 + 1);
 	};
 
-	for (let i = 0; i < BOARD_COLUMNS; i++) for (let j = 0; j < BOARD_ROWS; j++)
-		drawCell(i, j, static_board[j][i]);
+	for (let i = 0; i < 10; i++) for (let j = 0; j < 20; j++) drawCell(i, j, stack[j][i]);
 
-	for (let [x, y] of get_ghost_cells())  drawCell(x, y, GHOST_COLORS[active_piece.i]);
+	let saved_y = active_piece.y;
+	fast_drop();
+	let ghost_cells = get_active_cells();
+	active_piece.y = saved_y;
+
+	for (let [x, y] of ghost_cells)        drawCell(x, y, GHOST_COLORS[active_piece.i]);
 	for (let [x, y] of get_active_cells()) drawCell(x, y, PIECE_COLORS[active_piece.i]);
-
-	// Buttons
-	button_rects[0] = rect(0,       0,                       w,     h *      BUTTON_HEIGHT_SPLIT);
-	button_rects[1] = rect(w * 0/3, h * BUTTON_HEIGHT_SPLIT, w / 3, h * (1 - BUTTON_HEIGHT_SPLIT));
-	button_rects[2] = rect(w * 1/3, h * BUTTON_HEIGHT_SPLIT, w / 3, h * (1 - BUTTON_HEIGHT_SPLIT));
-	button_rects[3] = rect(w * 2/3, h * BUTTON_HEIGHT_SPLIT, w / 3, h * (1 - BUTTON_HEIGHT_SPLIT));
 };
 
-/// Timing
 let then = performance.now();
 let frame = now => {
 	let dt = now - then;
