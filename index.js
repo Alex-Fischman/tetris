@@ -181,12 +181,12 @@ let turn_right = () => {
 	active_piece.r = mod(active_piece.r + 1, 4);
 	if (!try_kicks()) active_piece.r = mod(active_piece.r - 1, 4);
 };
-let pause_game = () => { console.log("pause_game"); };
+let pause_game = () => { console.log("TODO: pause_game"); };
 
 /// Input handlers
 let button_rects = [undefined, undefined,  undefined , undefined, undefined, undefined ];
-let button_keys  = ["KeyA",    "Escape",   "KeyD"    , "KeyJ",    "Space",   "KeyL"    ];
-let button_funcs = [move_left, pause_game, move_right, turn_left, hard_drop, turn_right];
+let button_keys  = ["KeyJ",    "Escape",   "KeyL"    , "KeyA",    "Space",   "KeyD"    ];
+let button_funcs = [turn_left, pause_game, turn_right, move_left, hard_drop, move_right];
 
 document.addEventListener("pointerdown", e => button_rects.map((r, i) => {
 	if (rect_point(r, e.x, e.y)) button_funcs[i]();
