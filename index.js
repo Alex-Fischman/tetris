@@ -18,7 +18,13 @@ const GLYPH_PADDING = 0.8;
 const BOARD_COLOR = "#111";
 const BACKGROUND_COLOR = "#EEE";
 const BUTTON_COLOR = "#DDD";
-const PIECE_COLORS = ["#1EE", "#11E", "#EA1", "#EE1", "#1E1", "#E1E", "#E11"];
+
+let colors = (a, b, c) => [
+	`#${a}${c}${c}`, `#${a}${a}${c}`, `#${c}${b}${a}`, `#${c}${c}${a}`,
+	`#${a}${c}${a}`, `#${c}${a}${c}`, `#${c}${a}${a}`,
+];
+const PIECE_COLORS = colors("1", "A", "E");
+const GHOST_COLORS = colors("8", "C", "E");
 
 /// Utility
 let PI = Math.PI;
@@ -87,6 +93,14 @@ let get_active_cells = () => pieces[active_piece.i].map(([x, y]) => {
 		(sin * (x - c[0]) + cos * (y - c[1])) + c[1] + active_piece.y
 	];
 });
+
+let get_ghost_cells = () => {
+	let saved_y = active_piece.y;
+	fast_drop();
+	let saved_cells = get_active_cells();
+	active_piece.y = saved_y;
+	return saved_cells;
+};
 
 let is_active_colliding = () => {
 	for (let [x, y] of get_active_cells()) {
@@ -194,6 +208,7 @@ let render = () => {
 	for (let i = 0; i < BOARD_COLUMNS; i++) for (let j = 0; j < BOARD_ROWS; j++)
 		drawCell(i, j, static_board[j][i]);
 
+	for (let [x, y] of get_ghost_cells())  drawCell(x, y, GHOST_COLORS[active_piece.i]);
 	for (let [x, y] of get_active_cells()) drawCell(x, y, PIECE_COLORS[active_piece.i]);
 
 	// Buttons
