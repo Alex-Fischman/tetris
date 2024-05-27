@@ -26,7 +26,7 @@ let colors = (a, b, c) => [
 	`#${a}${c}${a}`, `#${c}${a}${c}`, `#${c}${a}${a}`,
 ];
 const PIECE_COLORS = colors("1", "A", "E");
-const GHOST_COLORS = colors("8", "C", "E");
+const GHOST_COLORS = colors("A", "C", "E");
 
 /// Utility
 let PI = Math.PI;
