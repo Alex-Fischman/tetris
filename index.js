@@ -38,15 +38,6 @@ let text = (s, x, y, style) => { context.fillStyle   = style; context.fillText(s
 let rect = (x, y, w, h) => ({ x, y, w, h });
 let rect_point = (r, x, y) => x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.h;
 
-let strokeRect = (r, style) => {
-	context.strokeStyle = style;
-	context.strokeRect(r.x, r.y, r.w, r.h);
-};
-let fillRect   = (r, style) => {
-	context.fillStyle = style;
-	context.fillRect(r.x, r.y, r.w, r.h);
-};
-
 /// Game state
 let active_piece = { x: 0, y: 0, r: 0, i: 0 };
 
@@ -56,7 +47,6 @@ let empty_row = () => Array(BOARD_COLUMNS).fill(BOARD_COLOR);
 let static_board = Array(BOARD_ROWS).fill(0).map(empty_row);
 
 let lines = 0;
-let score = 0;
 let last_drop_time = performance.now();
 
 /// Utility functions
@@ -133,23 +123,18 @@ let fast_drop = () => {
 let piece_has_landed = () => {
 	for (let [x, y] of get_active_cells()) {
 		if (y < 0) window.location.reload();
-		else static_board[y][x] = PIECE_COLORS[active_piece.i];
+		else       static_board[y][x] = PIECE_COLORS[active_piece.i];
 	}
 
 	next_piece();
-
 	last_drop_time = performance.now();
 
-	let lines_cleared = 0;
 	for (let i = 0; i < BOARD_ROWS; i++) if (static_board[i].every(x => x != BOARD_COLOR)) {
-		lines_cleared++;
+		lines++;
 
 		for (let j = i; j > 0; j--) static_board[j] = static_board[j - 1];
 		static_board[0] = empty_row();
 	}
-
-	lines += lines_cleared;
-	score += lines / 10 * [0, 40, 100, 300, 1200][lines_cleared];
 };
 
 /// Controls
@@ -172,7 +157,7 @@ let turn_right = () => {
 
 /// Input handlers
 let button_rects = [undefined, undefined, undefined,  undefined ];
-let button_keys  = ["Space",   "KeyA",    "KeyL",     "KeyD"    ];
+let button_keys  = ["Space",   "KeyA",    "KeyW",     "KeyD"    ];
 let button_funcs = [hard_drop, move_left, turn_right, move_right];
 
 document.addEventListener("pointerdown", e => button_rects.map((r, i) => {
@@ -203,29 +188,24 @@ let render = () => {
 	let {width: w, height: h} = context.canvas.getBoundingClientRect();
 	context.canvas.width = w;
 	context.canvas.height = h;
-	fillRect(rect(0, 0, w, h), BOARD_COLOR);
-	
-	context.lineWidth = 10;
-	context.lineJoin = "round";
-	context.lineCap = "round";
 
-	context.font = "bold 50px sans serif";
-	context.textBaseline = "top";
+	context.fillStyle = BOARD_COLOR;
+	context.fillRect(0, 0, w, h);
 
 	// Board
-	let bh = h - context.lineWidth;
-	let bw = bh / BOARD_ROWS * BOARD_COLUMNS;
-	let board = rect(w / 2 - bw / 2, context.lineWidth / 2, bw, bh);
+	let bw = h / 2;
+	let bh = h;
+	let bx = w / 2 - bw / 2;
+	let by = 0;
 
 	let drawCell = (i, j, style) => {
-		let cell = rect(
-			board.x + board.w * i / BOARD_COLUMNS,
-			board.y + board.h * j / BOARD_ROWS,
-			board.w / BOARD_COLUMNS,
-			board.h / BOARD_ROWS
+		context.fillStyle = style;
+		context.fillRect(
+			bx + bw * i / BOARD_COLUMNS,
+			by + bh * j / BOARD_ROWS,
+			bw / BOARD_COLUMNS + 1,
+			bh / BOARD_ROWS + 1
 		);
-		fillRect(cell, style);
-		strokeRect(cell, GRID_COLOR);
 	};
 
 	for (let i = 0; i < BOARD_COLUMNS; i++) for (let j = 0; j < BOARD_ROWS; j++)
