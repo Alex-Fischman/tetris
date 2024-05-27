@@ -70,6 +70,10 @@ for (let i = 0; i < BOARD_ROWS; i++) {
 	static_board.push(row);
 }
 
+let level = 1;
+let score = 0;
+let last_drop_time = performance.now();
+
 /// Utility functions
 let get_active_cells = () => pieces[active_piece.i].map(([x, y]) => {
 	let c = centers[active_piece.i];
@@ -93,10 +97,13 @@ let get_ghost_cells = () => {
 let is_active_colliding = () => {
 	for (let [x, y] of get_active_cells()) {
 		if (x < 0 || x >= BOARD_COLUMNS || y >= BOARD_ROWS) return true;
+		if (y < 0) continue; // some pieces start above the board
 		if (static_board[y][x] != BOARD_COLOR) return true;
 	}
 	return false;
 };
+
+let row_time = () => Math.pow((0.8 - ((level - 1) * 0.007)), (level - 1)) * 1000;;
 
 let try_kicks = () => {
 	if (!is_active_colliding()) return true;
@@ -120,6 +127,25 @@ let try_kicks = () => {
 	return false;
 };
 
+let fast_drop = () => {
+	while (!is_active_colliding()) active_piece.y += 1;
+	active_piece.y -= 1;
+};
+
+let piece_has_landed = () => {
+	for (let [x, y] of get_active_cells()) static_board[y][x] = PIECE_COLORS[active_piece.i];
+
+	active_piece.i = mod(active_piece.i + 1, 7);
+	active_piece.x = 0;
+	active_piece.y = 0;
+	active_piece.r = 0;
+
+	last_drop_time = performance.now();
+
+	// TODO: check for line clears
+	// TODO: score -> level
+};
+
 /// Controls
 let move_left = () => {
 	active_piece.x -= 1;
@@ -129,9 +155,9 @@ let move_right = () => {
 	active_piece.x += 1;
 	if (is_active_colliding()) active_piece.x -= 1;
 };
-let fast_drop = () => {
-	while (!is_active_colliding()) active_piece.y += 1;
-	active_piece.y -= 1;
+let hard_drop = () => {
+	fast_drop();
+	piece_has_landed();
 };
 let turn_left = () => {
 	active_piece.r = mod(active_piece.r - 1, 4);
@@ -146,7 +172,7 @@ let pause_game = () => { console.log("pause_game"); };
 /// Input handlers
 let button_rects = [undefined, undefined,  undefined , undefined, undefined, undefined ];
 let button_keys  = ["KeyA",    "Escape",   "KeyD"    , "KeyJ",    "Space",   "KeyL"    ];
-let button_funcs = [move_left, pause_game, move_right, turn_left, fast_drop, turn_right];
+let button_funcs = [move_left, pause_game, move_right, turn_left, hard_drop, turn_right];
 
 document.addEventListener("pointerdown", e => button_rects.map((r, i) => {
 	if (rect_point(r, e.x, e.y)) button_funcs[i]();
@@ -156,7 +182,20 @@ document.addEventListener("keydown", e => button_keys.map((k, i) => {
 }));
 
 /// Update
-let update = dt => {};
+let update = dt => {
+	let now = performance.now();
+
+	if (now - last_drop_time > row_time()) {
+		active_piece.y += 1;
+
+		if (is_active_colliding()) {
+			active_piece.y -= 1;
+			piece_has_landed();
+		}
+
+		last_drop_time = now;
+	}
+};
 
 /// Render
 let render = () => {
